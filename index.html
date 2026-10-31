@@ -89,7 +89,7 @@
 
     </div>
 
-    <!-- แถบกลาง: ยอดเงินคงเหลือแยกตามบัญชี (แบ่งสัดส่วนหมวดหมู่ชัดเจน) -->
+    <!-- แถบกลาง: ยอดเงินคงเหลือแยกตามบัญชี (รวม UOB) -->
     <div class="bg-slate-900/40 p-5 rounded-3xl border border-slate-800/80 space-y-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -101,7 +101,7 @@
         </button>
       </div>
 
-      <!-- Wallet Cards Container (แยกแสดงตามกลุ่ม) -->
+      <!-- Wallet Cards Container -->
       <div id="wallet-cards-grid" class="space-y-4"></div>
     </div>
 
@@ -141,30 +141,55 @@
             </label>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <!-- วันที่ & ช่องทาง (สำหรับรายรับ) -->
+          <div id="single-channel-row" class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-[11px] font-medium text-slate-400 mb-1">วันที่</label>
               <input type="date" id="tx-date" required class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
             </div>
-            
-            <!-- ส่วนเลือกช่องทางแบบปกติ (มี optgroup แบ่งสัดส่วน) -->
-            <div id="single-channel-wrapper">
-              <label class="block text-[11px] font-medium text-slate-400 mb-1">ช่องทาง / บัญชี</label>
-              <select id="tx-channel" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition font-semibold">
-                <!-- ใส่ผ่าน JS พร้อม optgroup -->
-              </select>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-400 mb-1">รับเข้าบัญชี</label>
+              <select id="tx-channel" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition font-semibold"></select>
             </div>
           </div>
 
-          <!-- ส่วนเลือกโอนเงิน จาก -> ไป (มี optgroup แบ่งสัดส่วน) -->
-          <div id="transfer-channels-wrapper" class="grid grid-cols-2 gap-3 hidden bg-cyan-950/20 p-3 rounded-2xl border border-cyan-500/30">
+          <!-- ช่องทางคู่ (สำหรับ รายจ่าย และ โอนเงิน) -->
+          <div id="dual-channel-row" class="hidden space-y-3">
             <div>
-              <label class="block text-[11px] font-bold text-rose-400 mb-1">📤 โอนจากบัญชี (หักลบ)</label>
-              <select id="tx-from-channel" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 font-semibold"></select>
+              <label class="block text-[11px] font-medium text-slate-400 mb-1">วันที่</label>
+              <input type="date" id="tx-date-dual" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
             </div>
-            <div>
-              <label class="block text-[11px] font-bold text-emerald-400 mb-1">📥 ไปยังบัญชี (เพิ่มเงิน)</label>
-              <select id="tx-to-channel" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 font-semibold"></select>
+
+            <div class="grid grid-cols-2 gap-3 p-3 bg-slate-950/60 rounded-2xl border border-slate-800/80">
+              <div>
+                <label id="label-from-channel" class="block text-[11px] font-bold text-rose-400 mb-1">📤 จ่ายจากบัญชี (ต้นทาง)</label>
+                <select id="tx-from-channel" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 font-semibold"></select>
+              </div>
+              <div>
+                <label id="label-to-channel" class="block text-[11px] font-bold text-cyan-400 mb-1">📥 จ่ายให้ / ชำระที่ (ปลายทาง)</label>
+                <select id="tx-to-channel" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 font-semibold"></select>
+              </div>
+            </div>
+
+            <!-- สวิตช์ปุ่มเลือกโหมด A vs B (แสดงเฉพาะเมื่อเป็น รายจ่าย) -->
+            <div id="expense-mode-box" class="p-3 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-2">
+              <span class="text-[11px] font-bold text-slate-300 block">⚙️ กำหนดการคิดเงินปลายทาง:</span>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="cursor-pointer">
+                  <input type="radio" name="expense-mode" value="A" class="peer sr-only" checked>
+                  <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/40 peer-checked:border-cyan-400 peer-checked:bg-cyan-500/10 peer-checked:text-cyan-300 text-slate-400 transition text-center">
+                    <div class="text-[11px] font-bold">🔘 แบบ A: ตัดต้นทางอย่างเดียว</div>
+                    <div class="text-[9px] text-slate-500 mt-0.5">ปลายทางแค่บันทึกผู้รับ (ไม่เพิ่มเงิน)</div>
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="expense-mode" value="B" class="peer sr-only">
+                  <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/40 peer-checked:border-emerald-400 peer-checked:bg-emerald-500/10 peer-checked:text-emerald-300 text-slate-400 transition text-center">
+                    <div class="text-[11px] font-bold">🔘 แบบ B: ตัดต้นทาง + เพิ่มปลายทาง</div>
+                    <div class="text-[9px] text-slate-500 mt-0.5">เช่น จ่ายหนี้/บัตร KTC (ยอดบัตรเพิ่ม)</div>
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -176,10 +201,10 @@
                 <option value="เงินออม">💰 เงินออม / ฝากประจำ</option>
               </optgroup>
               <optgroup label="บิลและค่าใช้จ่ายประจำ">
+                <option value="ชำระสินเชื่อ/บัตร">💳 ชำระสินเชื่อ / บัตร KTC / ค่างวด</option>
                 <option value="ค่าบ้าน">🏠 ค่าบ้าน / ผ่อนบ้าน / ค่าเช่า</option>
                 <option value="ค่าน้ำ">💧 ค่าน้ำประปา</option>
                 <option value="ค่าไฟ">⚡ ค่าไฟฟ้า</option>
-                <option value="ชำระสินเชื่อ/บัตร">💳 ชำระสินเชื่อ / บัตร KTC / ค่างวด</option>
               </optgroup>
               <optgroup label="รายได้">
                 <option value="รายได้ขายของ">📦 รายได้ขายของ (Shopee / TikTok)</option>
@@ -197,7 +222,7 @@
           <!-- รายละเอียด -->
           <div>
             <label class="block text-[11px] font-medium text-slate-400 mb-1">รายละเอียดรายการ</label>
-            <input type="text" id="tx-desc" placeholder="เช่น โอนย้ายเงิน, จ่ายค่างวด KTC, ชำระค่าไฟ" required class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
+            <input type="text" id="tx-desc" placeholder="เช่น จ่ายค่างวด KTC, ชำระค่าไฟ, ซื้อของเข้าบ้าน" required class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
           </div>
 
           <!-- จำนวนเงิน -->
@@ -250,7 +275,7 @@
     const db = firebase.database();
     const txRef = db.ref('transactions');
 
-    // โครงสร้างแบ่งกลุ่มสัดส่วนช่องทาง / บัญชี (ตามที่คุณต้องการ)
+    // โครงสร้างช่องทาง / บัญชี (เพิ่ม UOB เรียบร้อยแล้ว)
     const CHANNEL_GROUPS = [
       {
         groupName: "ธนาคาร & บัตร",
@@ -262,6 +287,7 @@
           { id: 'BAY', name: 'BAY (กรุงศรี)', shortName: 'BAY', icon: '🟡', color: '#f59e0b', tagText: 'text-amber-400', tagBorder: 'border-amber-500/40', tagBg: 'bg-amber-500/10' },
           { id: 'GHB', name: 'GHB (ธอส.)', shortName: 'GHB', icon: '🟠', color: '#f97316', tagText: 'text-orange-400', tagBorder: 'border-orange-500/40', tagBg: 'bg-orange-500/10' },
           { id: 'LHBANK', name: 'LH Bank (แลนด์ แอนด์ เฮ้าส์)', shortName: 'LH Bank', icon: '🩵', color: '#14b8a6', tagText: 'text-teal-400', tagBorder: 'border-teal-500/40', tagBg: 'bg-teal-500/10' },
+          { id: 'UOB', name: 'UOB (ยูโอบี)', shortName: 'UOB', icon: '🔷', color: '#3b82f6', tagText: 'text-blue-400', tagBorder: 'border-blue-500/40', tagBg: 'bg-blue-500/10' },
           { id: 'KTC', name: 'KTC (เคทีซี / บัตรเครดิต)', shortName: 'KTC', icon: '💳', color: '#38bdf8', tagText: 'text-blue-300', tagBorder: 'border-blue-400/40', tagBg: 'bg-blue-500/10' }
         ]
       },
@@ -290,7 +316,6 @@
       }
     ];
 
-    // รวมเป็น Array แบนราบเพื่อง่ายต่อการคำนวณ
     const CHANNELS = CHANNEL_GROUPS.flatMap(g => g.channels);
 
     let transactions = [];
@@ -298,10 +323,11 @@
     let flowChart = null;
     let channelChart = null;
 
-    document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+    document.getElementById('tx-date').value = todayStr;
+    document.getElementById('tx-date-dual').value = todayStr;
     document.getElementById('header-date').innerText = '📅 ' + new Date().toLocaleDateString('th-TH', { dateStyle: 'medium' });
 
-    // ใส่ตัวเลือกช่องทางลงใน Select แบบมี <optgroup> แบ่งสัดส่วน
     function populateChannelSelects() {
       const selects = [
         document.getElementById('tx-channel'),
@@ -324,25 +350,33 @@
         });
       });
 
-      document.getElementById('tx-from-channel').value = 'BAY';
-      document.getElementById('tx-to-channel').value = 'KBANK';
+      document.getElementById('tx-from-channel').value = 'KBANK';
+      document.getElementById('tx-to-channel').value = 'KTC';
     }
 
-    // สลับโหมดฟอร์มระหว่าง ธรรมดา กับ โอนเงิน
     window.toggleFormMode = function() {
       const type = document.querySelector('input[name="tx-type"]:checked').value;
-      const singleWrapper = document.getElementById('single-channel-wrapper');
-      const transferWrapper = document.getElementById('transfer-channels-wrapper');
-      const descInput = document.getElementById('tx-desc');
+      const singleRow = document.getElementById('single-channel-row');
+      const dualRow = document.getElementById('dual-channel-row');
+      const expenseModeBox = document.getElementById('expense-mode-box');
+      const labelFrom = document.getElementById('label-from-channel');
+      const labelTo = document.getElementById('label-to-channel');
 
-      if (type === 'transfer') {
-        singleWrapper.classList.add('hidden');
-        transferWrapper.classList.remove('hidden');
-        if (!descInput.value) descInput.value = 'โอนเงินระหว่างบัญชี';
-      } else {
-        singleWrapper.classList.remove('hidden');
-        transferWrapper.classList.add('hidden');
-        if (descInput.value === 'โอนเงินระหว่างบัญชี') descInput.value = '';
+      if (type === 'income') {
+        singleRow.classList.remove('hidden');
+        dualRow.classList.add('hidden');
+      } else if (type === 'expense') {
+        singleRow.classList.add('hidden');
+        dualRow.classList.remove('hidden');
+        expenseModeBox.classList.remove('hidden');
+        labelFrom.innerText = '📤 จ่ายจากบัญชี (ต้นทาง)';
+        labelTo.innerText = '📥 จ่ายให้ / ชำระที่ (ปลายทาง)';
+      } else if (type === 'transfer') {
+        singleRow.classList.add('hidden');
+        dualRow.classList.remove('hidden');
+        expenseModeBox.classList.add('hidden');
+        labelFrom.innerText = '📤 โอนจากบัญชี (ต้นทาง)';
+        labelTo.innerText = '📥 ไปยังบัญชี (ปลายทาง)';
       }
     };
 
@@ -411,7 +445,12 @@
         if (t.type === 'income') {
           if (balances[t.channel] !== undefined) balances[t.channel] += amt;
         } else if (t.type === 'expense') {
-          if (balances[t.channel] !== undefined) balances[t.channel] -= amt;
+          const from = t.fromChannel || t.channel;
+          if (balances[from] !== undefined) balances[from] -= amt;
+          
+          if (t.expenseMode === 'B' && t.toChannel && balances[t.toChannel] !== undefined) {
+            balances[t.toChannel] += amt;
+          }
         } else if (t.type === 'transfer') {
           if (balances[t.fromChannel] !== undefined) balances[t.fromChannel] -= amt;
           if (balances[t.toChannel] !== undefined) balances[t.toChannel] += amt;
@@ -420,7 +459,6 @@
       return balances;
     }
 
-    // แสดงผลการ์ดยอดเงินแยกตามกลุ่มสัดส่วน
     function renderWalletCards() {
       const container = document.getElementById('wallet-cards-grid');
       const balances = calculateChannelBalances();
@@ -436,7 +474,7 @@
         section.appendChild(title);
 
         const grid = document.createElement('div');
-        grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5';
+        grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-2.5';
 
         grp.channels.forEach(c => {
           const bal = balances[c.id] || 0;
@@ -473,6 +511,7 @@
       let income = 0;
       let expense = 0;
       const channelVol = {};
+      const balances = calculateChannelBalances();
 
       transactions.forEach(t => {
         const amt = parseFloat(t.amount);
@@ -481,13 +520,15 @@
           channelVol[t.channel] = (channelVol[t.channel] || 0) + amt;
         } else if (t.type === 'expense') {
           expense += amt;
-          channelVol[t.channel] = (channelVol[t.channel] || 0) + amt;
+          const from = t.fromChannel || t.channel;
+          channelVol[from] = (channelVol[from] || 0) + amt;
         } else if (t.type === 'transfer') {
           channelVol[t.fromChannel] = (channelVol[t.fromChannel] || 0) + amt;
         }
       });
 
-      const net = income - expense;
+      const net = Object.values(balances).reduce((sum, val) => sum + val, 0);
+
       document.getElementById('total-income').innerText = `฿${income.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
       document.getElementById('total-expense').innerText = `฿${expense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
       
@@ -519,10 +560,7 @@
       const filtered = currentFilter === 'ALL'
         ? transactions
         : transactions.filter(t => {
-            if (t.type === 'transfer') {
-              return t.fromChannel === currentFilter || t.toChannel === currentFilter;
-            }
-            return t.channel === currentFilter;
+            return t.channel === currentFilter || t.fromChannel === currentFilter || t.toChannel === currentFilter;
           });
 
       if (filtered.length === 0) {
@@ -545,21 +583,36 @@
             </span>
           `;
           amountHtml = `<span class="text-xs font-bold text-cyan-300">฿${amt.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>`;
+        } else if (t.type === 'expense') {
+          const fromId = t.fromChannel || t.channel;
+          const fromCh = CHANNELS.find(c => c.id === fromId) || { icon: '📌', shortName: fromId };
+          
+          if (t.toChannel) {
+            const toCh = CHANNELS.find(c => c.id === t.toChannel) || { icon: '📌', shortName: t.toChannel };
+            const modeText = t.expenseMode === 'B' ? 'โหมด B' : 'โหมด A';
+            tagHtml = `
+              <span class="text-[11px] px-2 py-0.5 rounded-lg border font-bold bg-rose-500/10 border-rose-500/30 text-rose-300 flex items-center gap-1">
+                <span>🔴</span> ${fromCh.icon} ${fromCh.shortName} ➔ ${toCh.icon} ${toCh.shortName}
+                <span class="text-[9px] px-1 py-0.2 bg-slate-900 rounded text-slate-400 ml-1">${modeText}</span>
+              </span>
+            `;
+          } else {
+            tagHtml = `
+              <span class="text-xs px-2.5 py-1 rounded-lg border font-bold bg-rose-500/10 border-rose-500/30 text-rose-400 flex items-center gap-1">
+                <span>${fromCh.icon}</span> ${fromCh.shortName}
+              </span>
+            `;
+          }
+          amountHtml = `<span class="text-xs font-bold text-rose-400">-฿${amt.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>`;
         } else {
-          const isInc = t.type === 'income';
-          const ch = CHANNELS.find(c => c.id === t.channel) || {
-            icon: '📌', shortName: t.channel, tagText: 'text-slate-400', tagBorder: 'border-slate-700', tagBg: 'bg-slate-800'
-          };
+          // รายรับ
+          const ch = CHANNELS.find(c => c.id === t.channel) || { icon: '📌', shortName: t.channel, tagText: 'text-slate-400', tagBorder: 'border-slate-700', tagBg: 'bg-slate-800' };
           tagHtml = `
             <span class="text-xs px-2.5 py-1 rounded-lg border font-bold ${ch.tagBg} ${ch.tagBorder} ${ch.tagText} flex items-center gap-1">
               <span>${ch.icon}</span> ${ch.shortName}
             </span>
           `;
-          amountHtml = `
-            <span class="text-xs font-bold ${isInc ? 'text-emerald-400' : 'text-rose-400'}">
-              ${isInc ? '+' : '-'}฿${amt.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-            </span>
-          `;
+          amountHtml = `<span class="text-xs font-bold text-emerald-400">+฿${amt.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>`;
         }
 
         const item = document.createElement('div');
@@ -610,33 +663,43 @@
       renderAll();
     });
 
-    // บันทึกรายการ
+    // บันทึกรายการลง Firebase
     document.getElementById('tx-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const type = document.querySelector('input[name="tx-type"]:checked').value;
       const submitBtn = document.getElementById('submit-btn');
 
+      const dateVal = type === 'income' 
+        ? document.getElementById('tx-date').value 
+        : document.getElementById('tx-date-dual').value;
+
       let newTx = {
         type: type,
-        date: document.getElementById('tx-date').value,
+        date: dateVal,
         category: document.getElementById('tx-category').value,
         desc: document.getElementById('tx-desc').value,
         amount: document.getElementById('tx-amount').value,
         timestamp: Date.now()
       };
 
-      if (type === 'transfer') {
+      if (type === 'income') {
+        newTx.channel = document.getElementById('tx-channel').value;
+      } else {
         const from = document.getElementById('tx-from-channel').value;
         const to = document.getElementById('tx-to-channel').value;
-        if (from === to) {
+
+        if (type === 'transfer' && from === to) {
           alert('บัญชีต้นทางและปลายทางต้องไม่เป็นบัญชีเดียวกันครับ');
           return;
         }
+
         newTx.fromChannel = from;
         newTx.toChannel = to;
         newTx.channel = from;
-      } else {
-        newTx.channel = document.getElementById('tx-channel').value;
+
+        if (type === 'expense') {
+          newTx.expenseMode = document.querySelector('input[name="expense-mode"]:checked').value;
+        }
       }
 
       submitBtn.disabled = true;
