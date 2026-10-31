@@ -51,9 +51,10 @@
           <div id="net-balance" class="text-3xl md:text-4xl font-extrabold mt-2 text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.25)]">
             ฿0.00
           </div>
+          <span class="text-[10px] text-slate-500 mt-1 block">*หักลดตามรายจ่ายและการโอน/ออมทั้งหมด</span>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 pt-6 border-t border-slate-800/80 mt-4">
+        <div class="grid grid-cols-2 gap-3 pt-5 border-t border-slate-800/80 mt-4">
           <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800/50">
             <span class="text-[11px] text-slate-400 font-medium">🟢 รายรับรวม</span>
             <div id="total-income" class="text-sm md:text-base font-bold text-emerald-400 mt-1">฿0.00</div>
@@ -89,7 +90,7 @@
 
     </div>
 
-    <!-- แถบกลาง: ยอดเงินคงเหลือแยกตามบัญชี (แบ่งสัดส่วนหมวดหมู่ชัดเจน) -->
+    <!-- แถบกลาง: ยอดเงินคงเหลือแยกตามบัญชี -->
     <div class="bg-slate-900/40 p-5 rounded-3xl border border-slate-800/80 space-y-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -224,7 +225,7 @@
           <!-- รายละเอียด -->
           <div>
             <label class="block text-[11px] font-medium text-slate-400 mb-1">รายละเอียดรายการ</label>
-            <input type="text" id="tx-desc" placeholder="เช่น เงินกองกลาง, จ่ายบิล AIS, DCA S&P 500" required class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
+            <input type="text" id="tx-desc" placeholder="เช่น โอนเงินออมเข้ากสิกร, จ่ายบิล AIS, DCA S&P 500" required class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
           </div>
 
           <!-- จำนวนเงิน -->
@@ -277,7 +278,6 @@
     const db = firebase.database();
     const txRef = db.ref('transactions');
 
-    // โครงสร้างช่องทาง / บัญชี (เพิ่ม Bank Together ในหมวดอื่นๆ เรียบร้อยแล้ว)
     const CHANNEL_GROUPS = [
       {
         groupName: "ธนาคาร & บัตร",
@@ -356,8 +356,8 @@
         });
       });
 
-      document.getElementById('tx-from-channel').value = 'KBANK';
-      document.getElementById('tx-to-channel').value = 'KTC';
+      document.getElementById('tx-from-channel').value = 'BAY';
+      document.getElementById('tx-to-channel').value = 'KBANK';
     }
 
     window.toggleFormMode = function() {
@@ -442,6 +442,7 @@
       });
     }
 
+    // คำนวณยอดเงินแต่ละบัญชี (ปลายทางบวกตามปกติ ต้นทางลบตามปกติ)
     function calculateChannelBalances() {
       const balances = {};
       CHANNELS.forEach(c => balances[c.id] = 0);
@@ -513,11 +514,12 @@
       });
     }
 
+    // คำนวณสรุปยอด: ยอดคงเหลือสุทธิรวม จะลดลงตามการจ่ายเงินทุกแบบและการโอนเงินทุกแบบ
     function renderSummaryAndCharts() {
       let income = 0;
       let expense = 0;
+      let transferTotal = 0;
       const channelVol = {};
-      const balances = calculateChannelBalances();
 
       transactions.forEach(t => {
         const amt = parseFloat(t.amount);
@@ -529,11 +531,13 @@
           const from = t.fromChannel || t.channel;
           channelVol[from] = (channelVol[from] || 0) + amt;
         } else if (t.type === 'transfer') {
+          transferTotal += amt;
           channelVol[t.fromChannel] = (channelVol[t.fromChannel] || 0) + amt;
         }
       });
 
-      const net = Object.values(balances).reduce((sum, val) => sum + val, 0);
+      // ตามที่คุณกำหนด: ยอดเงินคงเหลือสุทธิรวม จะหักลบทั้งจากรายจ่าย (ทุกแบบ) และการโอนเงิน (เช่น โอนไปออม)
+      const net = income - expense - transferTotal;
 
       document.getElementById('total-income').innerText = `฿${income.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
       document.getElementById('total-expense').innerText = `฿${expense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
@@ -588,14 +592,14 @@
               <span>🔄</span> ${fromCh.icon} ${fromCh.shortName} ➔ ${toCh.icon} ${toCh.shortName}
             </span>
           `;
-          amountHtml = `<span class="text-xs font-bold text-cyan-300">฿${amt.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>`;
+          amountHtml = `<span class="text-xs font-bold text-cyan-300">-฿${amt.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>`;
         } else if (t.type === 'expense') {
           const fromId = t.fromChannel || t.channel;
           const fromCh = CHANNELS.find(c => c.id === fromId) || { icon: '📌', shortName: fromId };
           
           if (t.toChannel) {
             const toCh = CHANNELS.find(c => c.id === t.toChannel) || { icon: '📌', shortName: t.toChannel };
-            const modeText = t.expenseMode === 'B' ? 'โหมด B' : 'โหมด A';
+            const modeText = t.expenseMode === 'B' ? 'โหมด B (เติมปลายทาง)' : 'โหมด A';
             tagHtml = `
               <span class="text-[11px] px-2 py-0.5 rounded-lg border font-bold bg-rose-500/10 border-rose-500/30 text-rose-300 flex items-center gap-1">
                 <span>🔴</span> ${fromCh.icon} ${fromCh.shortName} ➔ ${toCh.icon} ${toCh.shortName}
