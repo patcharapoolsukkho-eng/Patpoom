@@ -89,7 +89,7 @@
 
     </div>
 
-    <!-- แถบกลาง: ยอดเงินคงเหลือแยกตามบัญชี (รวม UOB) -->
+    <!-- แถบกลาง: ยอดเงินคงเหลือแยกตามบัญชี (แบ่งสัดส่วนหมวดหมู่ชัดเจน) -->
     <div class="bg-slate-900/40 p-5 rounded-3xl border border-slate-800/80 space-y-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -186,7 +186,7 @@
                   <input type="radio" name="expense-mode" value="B" class="peer sr-only">
                   <div class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/40 peer-checked:border-emerald-400 peer-checked:bg-emerald-500/10 peer-checked:text-emerald-300 text-slate-400 transition text-center">
                     <div class="text-[11px] font-bold">🔘 แบบ B: ตัดต้นทาง + เพิ่มปลายทาง</div>
-                    <div class="text-[9px] text-slate-500 mt-0.5">เช่น จ่ายหนี้/บัตร KTC (ยอดบัตรเพิ่ม)</div>
+                    <div class="text-[9px] text-slate-500 mt-0.5">เช่น จ่ายหนี้/บัตร KTC/พอร์ต (ยอดปลายทางเพิ่ม)</div>
                   </div>
                 </label>
               </div>
@@ -197,14 +197,16 @@
           <div>
             <label class="block text-[11px] font-medium text-slate-400 mb-1">หมวดหมู่</label>
             <select id="tx-category" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
-              <optgroup label="การออม & ลงทุน">
+              <optgroup label="การออม & การลงทุน">
                 <option value="เงินออม">💰 เงินออม / ฝากประจำ</option>
+                <option value="ลงทุนหุ้น/กองทุน">📈 ซื้อหุ้น / ลงทุน S&P 500 / พอร์ต</option>
               </optgroup>
               <optgroup label="บิลและค่าใช้จ่ายประจำ">
                 <option value="ชำระสินเชื่อ/บัตร">💳 ชำระสินเชื่อ / บัตร KTC / ค่างวด</option>
                 <option value="ค่าบ้าน">🏠 ค่าบ้าน / ผ่อนบ้าน / ค่าเช่า</option>
                 <option value="ค่าน้ำ">💧 ค่าน้ำประปา</option>
                 <option value="ค่าไฟ">⚡ ค่าไฟฟ้า</option>
+                <option value="ค่าเน็ต/โทรศัพท์">📶 ค่าโทรศัพท์ / บิล AIS</option>
               </optgroup>
               <optgroup label="รายได้">
                 <option value="รายได้ขายของ">📦 รายได้ขายของ (Shopee / TikTok)</option>
@@ -222,7 +224,7 @@
           <!-- รายละเอียด -->
           <div>
             <label class="block text-[11px] font-medium text-slate-400 mb-1">รายละเอียดรายการ</label>
-            <input type="text" id="tx-desc" placeholder="เช่น จ่ายค่างวด KTC, ชำระค่าไฟ, ซื้อของเข้าบ้าน" required class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
+            <input type="text" id="tx-desc" placeholder="เช่น จ่ายบิล AIS, เติมเงิน True Money, DCA S&P 500" required class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
           </div>
 
           <!-- จำนวนเงิน -->
@@ -275,7 +277,7 @@
     const db = firebase.database();
     const txRef = db.ref('transactions');
 
-    // โครงสร้างช่องทาง / บัญชี (เพิ่ม UOB เรียบร้อยแล้ว)
+    // โครงสร้างช่องทาง / บัญชี (เพิ่ม AIS, True Money, S&P 500 พร้อมตกแต่ง)
     const CHANNEL_GROUPS = [
       {
         groupName: "ธนาคาร & บัตร",
@@ -292,19 +294,22 @@
         ]
       },
       {
-        groupName: "สินเชื่อ / ดิจิทัล",
+        groupName: "สินเชื่อ / ดิจิทัล / พอร์ตลงทุน",
         icon: "⚡",
         channels: [
           { id: 'Money Thunder', name: 'Money Thunder', shortName: 'Thunder', icon: '⚡', color: '#6366f1', tagText: 'text-indigo-400', tagBorder: 'border-indigo-500/40', tagBg: 'bg-indigo-500/10' },
-          { id: 'UMey', name: 'Umay+ (ยูเมะพลัส)', shortName: 'Umay+', icon: '🔴', color: '#f43f5e', tagText: 'text-rose-400', tagBorder: 'border-rose-500/40', tagBg: 'bg-rose-500/10' }
+          { id: 'UMey', name: 'Umay+ (ยูเมะพลัส)', shortName: 'Umay+', icon: '🔴', color: '#f43f5e', tagText: 'text-rose-400', tagBorder: 'border-rose-500/40', tagBg: 'bg-rose-500/10' },
+          { id: 'SP500', name: 'S&P 500 (พอร์ตดัชนี/หุ้นสหรัฐฯ)', shortName: 'S&P 500', icon: '📈', color: '#06b6d4', tagText: 'text-cyan-300', tagBorder: 'border-cyan-500/40', tagBg: 'bg-cyan-500/10' }
         ]
       },
       {
-        groupName: "ร้านค้า & แพลตฟอร์ม",
+        groupName: "ร้านค้า & แพลตฟอร์ม & วอลเล็ต",
         icon: "🛍️",
         channels: [
           { id: 'Shopee', name: 'Shopee', shortName: 'Shopee', icon: '🛍️', color: '#ea580c', tagText: 'text-orange-400', tagBorder: 'border-orange-500/40', tagBg: 'bg-orange-500/10' },
-          { id: 'Tiktok', name: 'TikTok', shortName: 'TikTok', icon: '🎵', color: '#94a3b8', tagText: 'text-slate-300', tagBorder: 'border-slate-500/40', tagBg: 'bg-slate-700/30' }
+          { id: 'Tiktok', name: 'TikTok', shortName: 'TikTok', icon: '🎵', color: '#94a3b8', tagText: 'text-slate-300', tagBorder: 'border-slate-500/40', tagBg: 'bg-slate-700/30' },
+          { id: 'AIS', name: 'AIS (เอไอเอส)', shortName: 'AIS', icon: '📶', color: '#84cc16', tagText: 'text-lime-400', tagBorder: 'border-lime-500/40', tagBg: 'bg-lime-500/10' },
+          { id: 'TrueMoney', name: 'True Money (ทรูมันนี่)', shortName: 'TrueMoney', icon: '🧡', color: '#f97316', tagText: 'text-orange-300', tagBorder: 'border-orange-500/40', tagBg: 'bg-orange-500/10' }
         ]
       },
       {
