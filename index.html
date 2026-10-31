@@ -19,6 +19,8 @@
     ::-webkit-scrollbar-track { background: #090d16; }
     ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
     ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    optgroup { background-color: #0f172a; color: #94a3b8; font-weight: bold; }
+    option { background-color: #020617; color: #f8fafc; font-weight: normal; }
   </style>
 </head>
 <body class="bg-[#090d16] text-slate-100 min-h-screen p-3 md:p-8">
@@ -87,20 +89,20 @@
 
     </div>
 
-    <!-- แถบกลาง: ยอดเงินคงเหลือแยกตามบัญชี -->
-    <div class="space-y-3">
+    <!-- แถบกลาง: ยอดเงินคงเหลือแยกตามบัญชี (แบ่งสัดส่วนหมวดหมู่ชัดเจน) -->
+    <div class="bg-slate-900/40 p-5 rounded-3xl border border-slate-800/80 space-y-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">ยอดเงินคงเหลือแยกตามบัญชี</h2>
-          <span class="text-[11px] text-slate-500">(คลิกเพื่อกรองดูรายการ)</span>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">กระเป๋าเงินแยกตามบัญชี & หมวดหมู่</h2>
+          <span class="text-[11px] text-slate-500">(คลิกเพื่อกรองดูรายการเฉพาะบัญชี)</span>
         </div>
         <button onclick="filterByChannel('ALL')" id="btn-show-all" class="text-xs font-semibold text-cyan-400 hover:text-cyan-300 hover:underline transition">
           ดูทุกบัญชี
         </button>
       </div>
 
-      <!-- Wallet Cards Grid -->
-      <div id="wallet-cards-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3"></div>
+      <!-- Wallet Cards Container (แยกแสดงตามกลุ่ม) -->
+      <div id="wallet-cards-grid" class="space-y-4"></div>
     </div>
 
     <!-- แถวล่าง: ฟอร์มบันทึก & รายการประวัติ -->
@@ -145,16 +147,16 @@
               <input type="date" id="tx-date" required class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
             </div>
             
-            <!-- ส่วนเลือกช่องทางแบบปกติ (รายรับ/รายจ่าย) พร้อมสัญลักษณ์ -->
+            <!-- ส่วนเลือกช่องทางแบบปกติ (มี optgroup แบ่งสัดส่วน) -->
             <div id="single-channel-wrapper">
               <label class="block text-[11px] font-medium text-slate-400 mb-1">ช่องทาง / บัญชี</label>
               <select id="tx-channel" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition font-semibold">
-                <!-- ใส่ผ่าน JS -->
+                <!-- ใส่ผ่าน JS พร้อม optgroup -->
               </select>
             </div>
           </div>
 
-          <!-- ส่วนเลือกโอนเงิน จาก -> ไป (แสดงเมื่อเลือก โอนเงิน) พร้อมสัญลักษณ์ -->
+          <!-- ส่วนเลือกโอนเงิน จาก -> ไป (มี optgroup แบ่งสัดส่วน) -->
           <div id="transfer-channels-wrapper" class="grid grid-cols-2 gap-3 hidden bg-cyan-950/20 p-3 rounded-2xl border border-cyan-500/30">
             <div>
               <label class="block text-[11px] font-bold text-rose-400 mb-1">📤 โอนจากบัญชี (หักลบ)</label>
@@ -233,7 +235,7 @@
   </div>
 
   <script>
-    // 1. Firebase Config ของคุณ
+    // 1. Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyC8ywRuCAnpJs8iDoP65yHpXHcPiw9nrcw",
       authDomain: "patpoom-wallet.firebaseapp.com",
@@ -248,21 +250,48 @@
     const db = firebase.database();
     const txRef = db.ref('transactions');
 
-    // รายชื่อช่องทาง พร้อมสัญลักษณ์เฉพาะตัว (Icons & Emojis)
-    const CHANNELS = [
-      { id: 'KBANK', name: 'KBANK', icon: '🟢', color: '#10b981', tagText: 'text-emerald-400', tagBorder: 'border-emerald-500/40', tagBg: 'bg-emerald-500/10' },
-      { id: 'KTB', name: 'KTB', icon: '🔵', color: '#0ea5e9', tagText: 'text-sky-400', tagBorder: 'border-sky-500/40', tagBg: 'bg-sky-500/10' },
-      { id: 'SCB', name: 'SCB', icon: '🟣', color: '#a855f7', tagText: 'text-purple-400', tagBorder: 'border-purple-500/40', tagBg: 'bg-purple-500/10' },
-      { id: 'BAY', name: 'BAY', icon: '🟡', color: '#f59e0b', tagText: 'text-amber-400', tagBorder: 'border-amber-500/40', tagBg: 'bg-amber-500/10' },
-      { id: 'GHB', name: 'GHB', icon: '🟠', color: '#f97316', tagText: 'text-orange-400', tagBorder: 'border-orange-500/40', tagBg: 'bg-orange-500/10' },
-      { id: 'LHBANK', name: 'LH Bank', icon: '🩵', color: '#14b8a6', tagText: 'text-teal-400', tagBorder: 'border-teal-500/40', tagBg: 'bg-teal-500/10' },
-      { id: 'KTC', name: 'KTC', icon: '💳', color: '#38bdf8', tagText: 'text-blue-300', tagBorder: 'border-blue-400/40', tagBg: 'bg-blue-500/10' },
-      { id: 'Money Thunder', name: 'Thunder', icon: '⚡', color: '#6366f1', tagText: 'text-indigo-400', tagBorder: 'border-indigo-500/40', tagBg: 'bg-indigo-500/10' },
-      { id: 'UMey', name: 'Umay+', icon: '🔴', color: '#f43f5e', tagText: 'text-rose-400', tagBorder: 'border-rose-500/40', tagBg: 'bg-rose-500/10' },
-      { id: 'Shopee', name: 'Shopee', icon: '🛍️', color: '#ea580c', tagText: 'text-orange-400', tagBorder: 'border-orange-500/40', tagBg: 'bg-orange-500/10' },
-      { id: 'Tiktok', name: 'TikTok', icon: '🎵', color: '#94a3b8', tagText: 'text-slate-300', tagBorder: 'border-slate-500/40', tagBg: 'bg-slate-700/30' },
-      { id: 'เงินสด/อื่นๆ', name: 'เงินสด/อื่น', icon: '💵', color: '#64748b', tagText: 'text-slate-400', tagBorder: 'border-slate-600/40', tagBg: 'bg-slate-800/20' }
+    // โครงสร้างแบ่งกลุ่มสัดส่วนช่องทาง / บัญชี (ตามที่คุณต้องการ)
+    const CHANNEL_GROUPS = [
+      {
+        groupName: "ธนาคาร & บัตร",
+        icon: "🏦",
+        channels: [
+          { id: 'KBANK', name: 'KBANK (กสิกรไทย)', shortName: 'KBANK', icon: '🟢', color: '#10b981', tagText: 'text-emerald-400', tagBorder: 'border-emerald-500/40', tagBg: 'bg-emerald-500/10' },
+          { id: 'KTB', name: 'KTB (กรุงไทย)', shortName: 'KTB', icon: '🔵', color: '#0ea5e9', tagText: 'text-sky-400', tagBorder: 'border-sky-500/40', tagBg: 'bg-sky-500/10' },
+          { id: 'SCB', name: 'SCB (ไทยพาณิชย์)', shortName: 'SCB', icon: '🟣', color: '#a855f7', tagText: 'text-purple-400', tagBorder: 'border-purple-500/40', tagBg: 'bg-purple-500/10' },
+          { id: 'BAY', name: 'BAY (กรุงศรี)', shortName: 'BAY', icon: '🟡', color: '#f59e0b', tagText: 'text-amber-400', tagBorder: 'border-amber-500/40', tagBg: 'bg-amber-500/10' },
+          { id: 'GHB', name: 'GHB (ธอส.)', shortName: 'GHB', icon: '🟠', color: '#f97316', tagText: 'text-orange-400', tagBorder: 'border-orange-500/40', tagBg: 'bg-orange-500/10' },
+          { id: 'LHBANK', name: 'LH Bank (แลนด์ แอนด์ เฮ้าส์)', shortName: 'LH Bank', icon: '🩵', color: '#14b8a6', tagText: 'text-teal-400', tagBorder: 'border-teal-500/40', tagBg: 'bg-teal-500/10' },
+          { id: 'KTC', name: 'KTC (เคทีซี / บัตรเครดิต)', shortName: 'KTC', icon: '💳', color: '#38bdf8', tagText: 'text-blue-300', tagBorder: 'border-blue-400/40', tagBg: 'bg-blue-500/10' }
+        ]
+      },
+      {
+        groupName: "สินเชื่อ / ดิจิทัล",
+        icon: "⚡",
+        channels: [
+          { id: 'Money Thunder', name: 'Money Thunder', shortName: 'Thunder', icon: '⚡', color: '#6366f1', tagText: 'text-indigo-400', tagBorder: 'border-indigo-500/40', tagBg: 'bg-indigo-500/10' },
+          { id: 'UMey', name: 'Umay+ (ยูเมะพลัส)', shortName: 'Umay+', icon: '🔴', color: '#f43f5e', tagText: 'text-rose-400', tagBorder: 'border-rose-500/40', tagBg: 'bg-rose-500/10' }
+        ]
+      },
+      {
+        groupName: "ร้านค้า & แพลตฟอร์ม",
+        icon: "🛍️",
+        channels: [
+          { id: 'Shopee', name: 'Shopee', shortName: 'Shopee', icon: '🛍️', color: '#ea580c', tagText: 'text-orange-400', tagBorder: 'border-orange-500/40', tagBg: 'bg-orange-500/10' },
+          { id: 'Tiktok', name: 'TikTok', shortName: 'TikTok', icon: '🎵', color: '#94a3b8', tagText: 'text-slate-300', tagBorder: 'border-slate-500/40', tagBg: 'bg-slate-700/30' }
+        ]
+      },
+      {
+        groupName: "อื่นๆ",
+        icon: "💵",
+        channels: [
+          { id: 'เงินสด/อื่นๆ', name: 'เงินสด / อื่นๆ', shortName: 'เงินสด/อื่น', icon: '💵', color: '#64748b', tagText: 'text-slate-400', tagBorder: 'border-slate-600/40', tagBg: 'bg-slate-800/20' }
+        ]
+      }
     ];
+
+    // รวมเป็น Array แบนราบเพื่อง่ายต่อการคำนวณ
+    const CHANNELS = CHANNEL_GROUPS.flatMap(g => g.channels);
 
     let transactions = [];
     let currentFilter = 'ALL';
@@ -272,24 +301,31 @@
     document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
     document.getElementById('header-date').innerText = '📅 ' + new Date().toLocaleDateString('th-TH', { dateStyle: 'medium' });
 
-    // ใส่ตัวเลือกช่องทางลงใน Select พร้อมสัญลักษณ์
+    // ใส่ตัวเลือกช่องทางลงใน Select แบบมี <optgroup> แบ่งสัดส่วน
     function populateChannelSelects() {
-      const singleSelect = document.getElementById('tx-channel');
-      const fromSelect = document.getElementById('tx-from-channel');
-      const toSelect = document.getElementById('tx-to-channel');
+      const selects = [
+        document.getElementById('tx-channel'),
+        document.getElementById('tx-from-channel'),
+        document.getElementById('tx-to-channel')
+      ];
 
-      singleSelect.innerHTML = '';
-      fromSelect.innerHTML = '';
-      toSelect.innerHTML = '';
-
-      CHANNELS.forEach(c => {
-        singleSelect.innerHTML += `<option value="${c.id}">${c.icon} ${c.name}</option>`;
-        fromSelect.innerHTML += `<option value="${c.id}">${c.icon} ${c.name}</option>`;
-        toSelect.innerHTML += `<option value="${c.id}">${c.icon} ${c.name}</option>`;
+      selects.forEach(sel => {
+        sel.innerHTML = '';
+        CHANNEL_GROUPS.forEach(grp => {
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = `${grp.icon} ${grp.groupName}`;
+          grp.channels.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = `${c.icon} ${c.name}`;
+            optgroup.appendChild(opt);
+          });
+          sel.appendChild(optgroup);
+        });
       });
 
-      fromSelect.value = 'BAY';
-      toSelect.value = 'KBANK';
+      document.getElementById('tx-from-channel').value = 'BAY';
+      document.getElementById('tx-to-channel').value = 'KBANK';
     }
 
     // สลับโหมดฟอร์มระหว่าง ธรรมดา กับ โอนเงิน
@@ -384,35 +420,52 @@
       return balances;
     }
 
+    // แสดงผลการ์ดยอดเงินแยกตามกลุ่มสัดส่วน
     function renderWalletCards() {
-      const grid = document.getElementById('wallet-cards-grid');
+      const container = document.getElementById('wallet-cards-grid');
       const balances = calculateChannelBalances();
-      grid.innerHTML = '';
+      container.innerHTML = '';
 
-      CHANNELS.forEach(c => {
-        const bal = balances[c.id] || 0;
-        const isSelected = currentFilter === c.id;
+      CHANNEL_GROUPS.forEach(grp => {
+        const section = document.createElement('div');
+        section.className = 'space-y-2';
 
-        const card = document.createElement('div');
-        card.onclick = () => filterByChannel(c.id);
-        card.className = `p-3 rounded-2xl border transition cursor-pointer flex flex-col justify-between ${
-          isSelected 
-            ? 'bg-slate-900 border-cyan-400 ring-2 ring-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.2)]' 
-            : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900'
-        }`;
-        card.innerHTML = `
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold flex items-center gap-1.5">
-              <span>${c.icon}</span>
-              <span style="color: ${c.color}">${c.name}</span>
-            </span>
-            <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${c.color}"></span>
-          </div>
-          <div class="mt-2 text-xs font-bold ${bal >= 0 ? 'text-slate-100' : 'text-rose-400'}">
-            ฿${bal.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-          </div>
-        `;
-        grid.appendChild(card);
+        const title = document.createElement('div');
+        title.className = 'text-[11px] font-bold text-slate-400 flex items-center gap-1.5';
+        title.innerHTML = `<span>${grp.icon}</span> <span>${grp.groupName}</span>`;
+        section.appendChild(title);
+
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5';
+
+        grp.channels.forEach(c => {
+          const bal = balances[c.id] || 0;
+          const isSelected = currentFilter === c.id;
+
+          const card = document.createElement('div');
+          card.onclick = () => filterByChannel(c.id);
+          card.className = `p-3 rounded-2xl border transition cursor-pointer flex flex-col justify-between ${
+            isSelected 
+              ? 'bg-slate-900 border-cyan-400 ring-2 ring-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.2)]' 
+              : 'bg-slate-950/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900'
+          }`;
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold flex items-center gap-1.5">
+                <span>${c.icon}</span>
+                <span style="color: ${c.color}">${c.shortName}</span>
+              </span>
+              <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${c.color}"></span>
+            </div>
+            <div class="mt-2 text-xs font-bold ${bal >= 0 ? 'text-slate-100' : 'text-rose-400'}">
+              ฿${bal.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+
+        section.appendChild(grid);
+        container.appendChild(section);
       });
     }
 
@@ -484,22 +537,22 @@
         let amountHtml = '';
 
         if (t.type === 'transfer') {
-          const fromCh = CHANNELS.find(c => c.id === t.fromChannel) || { icon: '📤' };
-          const toCh = CHANNELS.find(c => c.id === t.toChannel) || { icon: '📥' };
+          const fromCh = CHANNELS.find(c => c.id === t.fromChannel) || { icon: '📤', shortName: t.fromChannel };
+          const toCh = CHANNELS.find(c => c.id === t.toChannel) || { icon: '📥', shortName: t.toChannel };
           tagHtml = `
             <span class="text-[11px] px-2.5 py-1 rounded-lg border font-bold bg-cyan-500/10 border-cyan-500/40 text-cyan-400 flex items-center gap-1">
-              <span>🔄</span> ${fromCh.icon} ${t.fromChannel} ➔ ${toCh.icon} ${t.toChannel}
+              <span>🔄</span> ${fromCh.icon} ${fromCh.shortName} ➔ ${toCh.icon} ${toCh.shortName}
             </span>
           `;
           amountHtml = `<span class="text-xs font-bold text-cyan-300">฿${amt.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>`;
         } else {
           const isInc = t.type === 'income';
           const ch = CHANNELS.find(c => c.id === t.channel) || {
-            icon: '📌', tagText: 'text-slate-400', tagBorder: 'border-slate-700', tagBg: 'bg-slate-800'
+            icon: '📌', shortName: t.channel, tagText: 'text-slate-400', tagBorder: 'border-slate-700', tagBg: 'bg-slate-800'
           };
           tagHtml = `
             <span class="text-xs px-2.5 py-1 rounded-lg border font-bold ${ch.tagBg} ${ch.tagBorder} ${ch.tagText} flex items-center gap-1">
-              <span>${ch.icon}</span> ${t.channel}
+              <span>${ch.icon}</span> ${ch.shortName}
             </span>
           `;
           amountHtml = `
@@ -539,7 +592,7 @@
       const ch = CHANNELS.find(c => c.id === channel);
       document.getElementById('active-filter-badge').innerText = channel === 'ALL' 
         ? 'แสดง: ทุกบัญชี' 
-        : `แสดงเฉพาะบัญชี: ${ch ? ch.icon + ' ' + ch.name : channel}`;
+        : `แสดงเฉพาะบัญชี: ${ch ? ch.icon + ' ' + ch.shortName : channel}`;
       renderWalletCards();
       renderTransactions();
     }
