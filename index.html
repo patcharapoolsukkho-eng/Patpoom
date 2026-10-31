@@ -224,7 +224,7 @@
           <!-- รายละเอียด -->
           <div>
             <label class="block text-[11px] font-medium text-slate-400 mb-1">รายละเอียดรายการ</label>
-            <input type="text" id="tx-desc" placeholder="เช่น จ่ายบิล AIS, เติมเงิน True Money, DCA S&P 500" required class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
+            <input type="text" id="tx-desc" placeholder="เช่น เงินกองกลาง, จ่ายบิล AIS, DCA S&P 500" required class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 outline-none focus:border-cyan-500 transition">
           </div>
 
           <!-- จำนวนเงิน -->
@@ -277,7 +277,7 @@
     const db = firebase.database();
     const txRef = db.ref('transactions');
 
-    // โครงสร้างช่องทาง / บัญชี (เพิ่ม AIS, True Money, S&P 500 พร้อมตกแต่ง)
+    // โครงสร้างช่องทาง / บัญชี (เพิ่ม Bank Together ในหมวดอื่นๆ เรียบร้อยแล้ว)
     const CHANNEL_GROUPS = [
       {
         groupName: "ธนาคาร & บัตร",
@@ -316,6 +316,7 @@
         groupName: "อื่นๆ",
         icon: "💵",
         channels: [
+          { id: 'BankTogether', name: 'Bank Together (บัญชีร่วม)', shortName: 'Bank Together', icon: '🤝', color: '#ec4899', tagText: 'text-pink-400', tagBorder: 'border-pink-500/40', tagBg: 'bg-pink-500/10' },
           { id: 'เงินสด/อื่นๆ', name: 'เงินสด / อื่นๆ', shortName: 'เงินสด/อื่น', icon: '💵', color: '#64748b', tagText: 'text-slate-400', tagBorder: 'border-slate-600/40', tagBg: 'bg-slate-800/20' }
         ]
       }
